@@ -34,7 +34,7 @@ addCSS(
 	"https://raw.githubusercontent.com/jinnotgin/ufinity-timelog-upgrade/master/public/global.css"
 );
 addCSS(
-	"https://raw.githubusercontent.com/jinnotgin/ufinity-timelog-upgrade/master/public/build/bundle.csss"
+	"https://raw.githubusercontent.com/jinnotgin/ufinity-timelog-upgrade/master/public/build/bundle.css"
 );
 addScript(
 	"https://raw.githubusercontent.com/jinnotgin/ufinity-timelog-upgrade/master/public/build/bundle.js"
