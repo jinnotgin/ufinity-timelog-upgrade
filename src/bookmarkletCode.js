@@ -30,6 +30,12 @@ function addScript(filename) {
 	head.append(script);
 }
 
-addCSS("http://localhost:5000/global.css");
-addCSS("http://localhost:5000/build/bundle.css");
-addScript("http://localhost:5000/build/bundle.js");
+addCSS(
+	"https://raw.githubusercontent.com/jinnotgin/ufinity-timelog-upgrade/master/public/global.css"
+);
+addCSS(
+	"https://raw.githubusercontent.com/jinnotgin/ufinity-timelog-upgrade/master/public/build/bundle.csss"
+);
+addScript(
+	"https://raw.githubusercontent.com/jinnotgin/ufinity-timelog-upgrade/master/public/build/bundle.js"
+);
