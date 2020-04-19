@@ -4,9 +4,8 @@
   .ph-item {
     background: unset;
     border: unset;
-    margin: 0;
+    margin: 12px 0;
     padding: 0;
-    margin-top: 15px;
   }
 
   .ph-row {
