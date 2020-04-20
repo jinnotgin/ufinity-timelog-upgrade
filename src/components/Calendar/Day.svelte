@@ -62,15 +62,15 @@
       }
     }
   }
-  .container.active {
-    background: rgba(var(--color-primary-hex), 0.8);
-    color: var(--color-white);
-  }
   .container.isToday {
     background: rgba(var(--color-info-hex), 0.5);
   }
   .container.light {
     background: rgba(var(--color-secondary-hex), 0.5);
+  }
+  .container.active {
+    background: rgba(var(--color-primary-hex), 0.8);
+    color: var(--color-white);
   }
   .container:hover {
     background: rgba(var(--color-primary-hex), 0.5);
