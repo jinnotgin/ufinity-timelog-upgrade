@@ -52,7 +52,7 @@ export class SelectionGrid {
 	}
 
 	_helper(inputSlot) {
-		const slot = inputSlot / this.step; //normalised slot
+		const slot = Math.floor(inputSlot / this.step); //normalised slot
 
 		const anchors = Object.keys(this.selection);
 

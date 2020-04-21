@@ -1,6 +1,7 @@
-import { writable } from "svelte/store";
+import { readable, writable } from "svelte/store";
 import moment from "moment";
 import _ from "lodash";
+import { SelectionGrid } from "./utils.js";
 
 /*** STORES ***/
 const calendarView_generator = (date) => {
@@ -33,6 +34,7 @@ export const timelogAutoRules = writable([
 ]);
 export const daysWithAutoRule = writable([]);
 export const datesSelectedRange = writable([]);
+export const datesSelection = readable(new SelectionGrid(60 * 60 * 24));
 
 export const showWeekends = writable(false);
 export const uncommittedProjectsPerDay = writable([]);
