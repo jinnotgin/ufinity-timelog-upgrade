@@ -84,11 +84,8 @@
     class:isSaving
     on:click={() => dispatchMsg('click')}
     on:mousedown={() => dispatchMsg('mouseDown')}
-    on:touchstart={() => dispatchMsg('mouseDown')}
     on:mouseup={() => dispatchMsg('mouseUp')}
-    on:touchend={() => dispatchMsg('mouseUp')}
     on:mouseenter={() => dispatchMsg('mouseEnter')}
-    on:touchmove={() => dispatchMsg('mouseEnter')}
     on:mouseleave={() => dispatchMsg('mouseLeave')}>
     <div class="contents">
       <span class="date">

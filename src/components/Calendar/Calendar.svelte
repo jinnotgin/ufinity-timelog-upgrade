@@ -19,21 +19,25 @@
     const dateIsSelected = $datesSelection.exists(date.valueOf());
 
     const dateIsARelevantDay = dragData.relevantHoverDays.includes(date.day());
+    const dateIsARelevantWeek = dragData.relevantHoverWeeks.includes(
+      date.week()
+    );
 
-    const check_forwardLinking =
-      dragData.direction === "forward" &&
-      date.isSameOrAfter(dragData.startDate) &&
-      date.isSameOrBefore(dragData.hoverDate);
+    // const check_forwardLinking =
+    //   dragData.dateDirection === "forward" &&
+    //   date.isSameOrAfter(dragData.startDate) &&
+    //   date.isSameOrBefore(dragData.hoverDate);
 
-    const check_backwardLinking =
-      dragData.direction === "backward" &&
-      date.isSameOrBefore(dragData.startDate) &&
-      date.isSameOrAfter(dragData.hoverDate);
+    // const check_backwardLinking =
+    //   dragData.dateDirection === "backward" &&
+    //   date.isSameOrBefore(dragData.startDate) &&
+    //   date.isSameOrAfter(dragData.hoverDate);
 
     if (
       dragData.isDragging &&
       dateIsARelevantDay &&
-      (check_forwardLinking || check_backwardLinking)
+      // (check_forwardLinking || check_backwardLinking)
+      dateIsARelevantWeek
     )
       return "light";
     else if (dateIsSelected) return "active";
@@ -47,6 +51,8 @@
 
     const new_datesToRender = [];
     uncommittedProjectsPerDay.update(_ => []);
+
+    dragData.pendingSelection = [];
     for (
       let currentDate = startDate.clone();
       currentDate.isSameOrBefore(endDate);
@@ -61,10 +67,14 @@
         {}
       );
 
+      const currentDate_type = dateType(currentDate);
+      if (currentDate_type === "light")
+        dragData.pendingSelection.push(currentDate.clone());
+
       const output = {
         isLoading,
         date: currentDate.clone(),
-        type: dateType(currentDate),
+        type: currentDate_type,
         events: Object.values(clientData).map(item => {
           const clientDifferentFromServer = !_.isEqual(
             _.get(
@@ -92,6 +102,7 @@
           };
         })
       };
+      console.log(_.clone(dragData.pendingSelection));
       output.isSaving = output.events
         .map(item => _.get(item, "fetching", false))
         .includes(true);
@@ -105,7 +116,7 @@
 
   $: ($calendarView ||
     $showWeekends ||
-    dragData ||
+    dragData.hoverDate ||
     $datesSelection.selection ||
     $timelogsData) &&
     generate_datesToRender();
@@ -125,9 +136,11 @@
     dragData.isDragging = false;
     dragData.startDate = false;
     dragData.endDate = false;
-    dragData.direction = "forward";
+    dragData.dateDirection = "forward";
     dragData.hoverDate = false;
     dragData.relevantHoverDays = [];
+    dragData.relevantHoverWeeks = [];
+    dragData.pendingSelection = [];
   };
   reset_dragData();
 
@@ -138,29 +151,41 @@
     const startDay = startDate.day();
     const endDay = hoverDate.day();
 
-    const output = [];
+    const output_hoverDays = [];
     for (
       let i = startDay;
-      dragData.direction === "backward" ? i >= endDay : i <= endDay;
-      dragData.direction === "backward" ? i-- : i++
+      endDay < startDay ? i >= endDay : i <= endDay;
+      endDay < startDay ? i-- : i++
     ) {
-      output.push(i);
+      output_hoverDays.push(i);
     }
+    dragData.relevantHoverDays = output_hoverDays;
 
-    dragData.relevantHoverDays = output;
-    // console.log(dragData.relevantHoverDays);
-    return output;
+    const startWeek = startDate.week();
+    const endWeek = hoverDate.week();
+    const output_hoverWeeks = [];
+    for (
+      let i = startWeek;
+      endWeek < startWeek ? i >= endWeek : i <= endWeek;
+      endWeek < startWeek ? i-- : i++
+    ) {
+      output_hoverWeeks.push(i);
+    }
+    dragData.relevantHoverWeeks = output_hoverWeeks;
+
+    // console.log(dragData.relevantHoverDays, dragData.relevantHoverWeeks);
+    return true;
   };
 
   const process_dragData = () => {
-    let { startDate = false, endDate = false } = dragData;
+    /*let { startDate = false, endDate = false } = dragData;
     if (!!startDate && !!endDate) {
       for (
         let i = startDate.clone();
-        dragData.direction === "backward"
+        dragData.dateDirection === "backward"
           ? i.isSameOrAfter(endDate)
           : i.isSameOrBefore(endDate);
-        dragData.direction === "backward"
+        dragData.dateDirection === "backward"
           ? i.subtract(1, "days")
           : i.add(1, "days")
       ) {
@@ -169,6 +194,10 @@
 
         $datesSelection.toggle(i.valueOf());
       }
+    }*/
+    for (let currentDate of dragData.pendingSelection) {
+      console.log(currentDate);
+      $datesSelection.toggle(currentDate.valueOf());
     }
     datesSelection.update(_ => _);
     reset_dragData();
@@ -195,9 +224,9 @@
       }
       case "mouseEnter": {
         const { date = false } = event.detail;
-        console.log(date.format());
+        // console.log(date.format());
         dragData.hoverDate = date;
-        dragData.direction = date.isSameOrAfter(dragData.startDate)
+        dragData.dateDirection = date.isSameOrAfter(dragData.startDate)
           ? "forward"
           : "backward";
         processRelevantDays_dragData();
@@ -211,7 +240,9 @@
         break;
       }
       case "click": {
-        console.log("ignoreClick");
+        const { date = false } = event.detail;
+        $datesSelection.toggle(date.valueOf());
+        datesSelection.update(_ => _);
         break;
       }
       default: {
