@@ -46,22 +46,23 @@ export const timelog_saving = (store, storeValue, params, newId) => {
 };
 
 export class SelectionGrid {
-	constructor(step = 1) {
+	constructor(step = 1, offset = 0) {
 		this.step = step;
+		this.offset = offset;
 		this.selection = {};
 	}
 
-	_helper(inputSlot) {
-		const slot = Math.floor(inputSlot / this.step); //normalised slot
+	_helper(inputSlot, slotDoesNotExist = false) {
+		const slot = Math.floor(inputSlot / this.step - this.offset); //normalised slot
 
 		const anchors = Object.keys(this.selection);
 
-		const lAnchorIndex = _.sortedIndex(anchors, slot) - 1; // leftNearest anchor's index
+		const lAnchorIndex = _.sortedIndex(anchors, slot) - +slotDoesNotExist; // leftNearest anchor's index
 		const lAnchor = parseFloat(anchors[lAnchorIndex]); // leftNearast anchor
 		const lAnchorExtension = this.selection[lAnchor]; // leftNearast anchor
 		const lAnchorExtended = lAnchor + lAnchorExtension;
 
-		return {
+		const output = {
 			slot,
 			anchors,
 			lAnchorIndex,
@@ -69,6 +70,7 @@ export class SelectionGrid {
 			lAnchorExtension,
 			lAnchorExtended,
 		};
+		return output;
 	}
 
 	exists(inputSlot) {
@@ -86,10 +88,8 @@ export class SelectionGrid {
 		}
 	}
 
-	add(inputSlot, extendToAnchors = false) {
-		if (!!this.exists(inputSlot)) return false;
-
-		const helperData = this._helper(inputSlot);
+	_add(inputSlot, extendToAnchors = false) {
+		const helperData = this._helper(inputSlot, true);
 		const { slot, anchors } = helperData;
 
 		if (anchors.length === 0 || !!!extendToAnchors) {
@@ -124,9 +124,13 @@ export class SelectionGrid {
 		return this.selection;
 	}
 
-	remove(inputSlot) {
-		if (!!!this.exists(inputSlot)) return false;
+	add(inputSlot, extendToAnchors = false) {
+		if (!!this.exists(inputSlot)) return false;
 
+		this._add(inputSlot, extendToAnchors);
+	}
+
+	_remove(inputSlot) {
 		const { slot, lAnchor, lAnchorExtension, lAnchorExtended } = this._helper(
 			inputSlot
 		);
@@ -140,6 +144,17 @@ export class SelectionGrid {
 				this.selection[slot + 1] = lAnchorExtended - (slot + 1);
 		}
 		return this.selection;
+	}
+
+	remove(inputSlot) {
+		if (!!!this.exists(inputSlot)) return false;
+
+		return this._remove(inputSlot);
+	}
+
+	toggle(inputSlot) {
+		if (!!this.exists(inputSlot)) return this._remove(inputSlot);
+		else return this._add(inputSlot);
 	}
 
 	reindex() {
@@ -182,5 +197,24 @@ export class SelectionGrid {
 
 		this.selection = future_selection;
 		return this.selection;
+	}
+
+	reset() {
+		this.selection = {};
+	}
+
+	toArray(originalInput = false) {
+		const transformStepToInput = (slot) => (slot + this.offset) * this.step;
+
+		const output = [];
+		for (let [anchor, extension] of Object.entries(this.selection)) {
+			const anchorValue = parseFloat(anchor);
+			for (let i = 0; i <= extension; i++) {
+				if (originalInput) output.push(transformStepToInput(anchorValue + i));
+				else output.push(anchorValue + i);
+			}
+		}
+
+		return output;
 	}
 }
