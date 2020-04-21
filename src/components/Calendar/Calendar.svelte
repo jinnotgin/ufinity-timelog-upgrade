@@ -7,7 +7,7 @@
     calendarView,
     projectsData,
     timelogsData,
-    datesSelectedRange,
+    datesSelection,
     showWeekends,
     uncommittedProjectsPerDay,
     calendarView_changeMonth
@@ -15,25 +15,28 @@
   import { setContext } from "svelte";
   export let pageDisabled;
 
-  let dateHovered = false;
-
   const dateType = date => {
-    const twoDatesSelected_within =
-      $datesSelectedRange.length === 2 &&
-      date.isSameOrAfter($datesSelectedRange[0]) &&
-      date.isSameOrBefore($datesSelectedRange[1]);
+    const dateIsSelected = $datesSelection.exists(date.valueOf());
 
-    const oneDateSelected_sameDay =
-      $datesSelectedRange.length === 1 && date.isSame($datesSelectedRange[0]);
+    const dateIsARelevantDay = dragData.relevantHoverDays.includes(date.day());
 
-    const oneDateSelected_hover =
-      $datesSelectedRange.length === 1 &&
-      dateHovered &&
-      date.isAfter($datesSelectedRange[0]) &&
-      date.isSameOrBefore(dateHovered);
+    const check_forwardLinking =
+      dragData.direction === "forward" &&
+      date.isSameOrAfter(dragData.startDate) &&
+      date.isSameOrBefore(dragData.hoverDate);
 
-    if (twoDatesSelected_within || oneDateSelected_sameDay) return "active";
-    else if (oneDateSelected_hover) return "light";
+    const check_backwardLinking =
+      dragData.direction === "backward" &&
+      date.isSameOrBefore(dragData.startDate) &&
+      date.isSameOrAfter(dragData.hoverDate);
+
+    if (
+      dragData.isDragging &&
+      dateIsARelevantDay &&
+      (check_forwardLinking || check_backwardLinking)
+    )
+      return "light";
+    else if (dateIsSelected) return "active";
     else return false;
   };
 
@@ -99,10 +102,11 @@
     // console.log($uncommittedProjectsPerDay);
     datesToRender = [...new_datesToRender];
   };
+
   $: ($calendarView ||
     $showWeekends ||
-    dateHovered ||
-    $datesSelectedRange ||
+    dragData ||
+    $datesSelection.selection ||
     $timelogsData) &&
     generate_datesToRender();
 
@@ -116,46 +120,98 @@
     $showWeekends && "SAT"
   ].filter(item => item);
 
+  const dragData = {};
+  const reset_dragData = () => {
+    dragData.isDragging = false;
+    dragData.startDate = false;
+    dragData.endDate = false;
+    dragData.direction = "forward";
+    dragData.hoverDate = false;
+    dragData.relevantHoverDays = [];
+  };
+  reset_dragData();
+
+  const processRelevantDays_dragData = () => {
+    let { startDate = false, hoverDate = false } = dragData;
+    if (!!!startDate || !!!hoverDate) return false;
+
+    const startDay = startDate.day();
+    const endDay = hoverDate.day();
+
+    const output = [];
+    for (
+      let i = startDay;
+      dragData.direction === "backward" ? i >= endDay : i <= endDay;
+      dragData.direction === "backward" ? i-- : i++
+    ) {
+      output.push(i);
+    }
+
+    dragData.relevantHoverDays = output;
+    // console.log(dragData.relevantHoverDays);
+    return output;
+  };
+
+  const process_dragData = () => {
+    let { startDate = false, endDate = false } = dragData;
+    if (!!startDate && !!endDate) {
+      for (
+        let i = startDate.clone();
+        dragData.direction === "backward"
+          ? i.isSameOrAfter(endDate)
+          : i.isSameOrBefore(endDate);
+        dragData.direction === "backward"
+          ? i.subtract(1, "days")
+          : i.add(1, "days")
+      ) {
+        if (!dragData.relevantHoverDays.includes(i.day())) continue;
+        // if (!!!$showWeekends && [0, 6].includes(i.day())) continue;
+
+        $datesSelection.toggle(i.valueOf());
+      }
+    }
+    datesSelection.update(_ => _);
+    reset_dragData();
+  };
+
   const handleMessage = event => {
     if (pageDisabled) return false;
 
     switch (event.detail.type) {
+      case "mouseDown": {
+        const { date = false } = event.detail;
+        // console.log("mouseDown", date);
+        dragData.startDate = date;
+        break;
+      }
+      case "mouseUp": {
+        const { date = false } = event.detail;
+        // console.log("mouseUp", date);
+        dragData.endDate = date;
+        // console.log(dragData);
+        processRelevantDays_dragData();
+        process_dragData();
+        break;
+      }
       case "mouseEnter": {
         const { date = false } = event.detail;
-        dateHovered = date;
-        // console.log(dateHovered);
+        console.log(date.format());
+        dragData.hoverDate = date;
+        dragData.direction = date.isSameOrAfter(dragData.startDate)
+          ? "forward"
+          : "backward";
+        processRelevantDays_dragData();
+        // console.log(dragData.relevantHoverDays);
+        // console.log(dragData.hoverDate);
         break;
       }
       case "mouseLeave": {
-        dateHovered = false;
-        // console.log(dateHovered);
+        dragData.hoverDate = false;
+        // console.log(dragData.hoverDate);
         break;
       }
       case "click": {
-        const { date = false } = event.detail;
-        let future_dateSelectedRange = _.clone($datesSelectedRange);
-
-        const hasStartingSelectedDate =
-          $datesSelectedRange.length === 1 &&
-          moment.isMoment($datesSelectedRange[0]);
-
-        const date_afterFirstClicked =
-          hasStartingSelectedDate && date.isAfter($datesSelectedRange[0]);
-        if (
-          !!!date ||
-          $datesSelectedRange.length >= 2 ||
-          !date_afterFirstClicked
-        )
-          future_dateSelectedRange = [];
-
-        const date_sameAsFirstClicked =
-          hasStartingSelectedDate && date.isSame($datesSelectedRange[0]);
-        if (!date_sameAsFirstClicked) future_dateSelectedRange.push(date);
-
-        // console.log(
-        //   future_dateSelectedRange.map(item => item.toISOString().split("T")[0])
-        // );
-        datesSelectedRange.update(item => future_dateSelectedRange);
+        console.log("ignoreClick");
         break;
       }
       default: {
@@ -253,14 +309,18 @@
     </div>
   </div>
 
-  <div class="calendar" class:showWeekends={$showWeekends}>
+  <div
+    class="calendar"
+    class:showWeekends={$showWeekends}
+    on:mousedown={() => (dragData.isDragging = true)}
+    on:mouseup={() => (dragData.isDragging = false)}>
     <div class="dayName-container">
       {#each daysToRender as item, i (`${item}_${i}`)}
         <div class="dayName">{item}</div>
       {/each}
     </div>
     <div class="day-grid">
-      {#each datesToRender as { isLoading, date, type, events, isSaving } (date.unix())}
+      {#each datesToRender as { isLoading, date, type, events, isSaving } (date.valueOf())}
         <Day
           disabled={pageDisabled}
           {date}

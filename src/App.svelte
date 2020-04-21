@@ -11,8 +11,7 @@
     timelogsData,
     timelogAutoRules,
     daysWithAutoRule,
-    uncommittedProjectsPerDay,
-    datesSelectedRange
+    uncommittedProjectsPerDay
   } from "./stores.js";
   import { timelogAutoRules_getRule, timelog_saving } from "./utils.js";
 
@@ -22,7 +21,6 @@
     // console.log($uncommittedProjectsPerDay);
     // console.log($timelogsData.client.data);
     pageDisabled = true;
-    datesSelectedRange.update(_ => []);
 
     for (let { dateIso, projectId } of $uncommittedProjectsPerDay) {
       console.log({ dateIso, projectId });
@@ -82,7 +80,7 @@
 
     // now move backwards until the last know date
     for (
-      let currentMoment = moment().startOf("day");
+      let currentMoment = moment.utc().startOf("day");
       typeof future_clientData[currentMoment.toISOString()] === "undefined";
       currentMoment.subtract(1, "days")
     ) {

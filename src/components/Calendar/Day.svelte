@@ -10,21 +10,9 @@
 
   const dispatch = createEventDispatcher();
 
-  const dispatchClick = () => {
+  const dispatchMsg = name => {
     dispatch("message", {
-      type: "click",
-      date
-    });
-  };
-  const dispatchMouseEnter = () => {
-    dispatch("message", {
-      type: "mouseEnter",
-      date
-    });
-  };
-  const dispatchMouseLeave = () => {
-    dispatch("message", {
-      type: "mouseLeave",
+      type: name,
       date
     });
   };
@@ -65,12 +53,12 @@
   .container.isToday {
     background: rgba(var(--color-info-hex), 0.5);
   }
-  .container.light {
-    background: rgba(var(--color-secondary-hex), 0.5);
-  }
   .container.active {
     background: rgba(var(--color-primary-hex), 0.8);
     color: var(--color-white);
+  }
+  .container.light {
+    background: rgba(var(--color-secondary-hex), 0.5);
   }
   .container:hover {
     background: rgba(var(--color-primary-hex), 0.5);
@@ -94,9 +82,14 @@
     class:light={type === 'light'}
     class:isToday
     class:isSaving
-    on:click={dispatchClick}
-    on:mouseenter={dispatchMouseEnter}
-    on:mouseleave={dispatchMouseLeave}>
+    on:click={() => dispatchMsg('click')}
+    on:mousedown={() => dispatchMsg('mouseDown')}
+    on:touchstart={() => dispatchMsg('mouseDown')}
+    on:mouseup={() => dispatchMsg('mouseUp')}
+    on:touchend={() => dispatchMsg('mouseUp')}
+    on:mouseenter={() => dispatchMsg('mouseEnter')}
+    on:touchmove={() => dispatchMsg('mouseEnter')}
+    on:mouseleave={() => dispatchMsg('mouseLeave')}>
     <div class="contents">
       <span class="date">
         <strong>{date.date()}</strong>

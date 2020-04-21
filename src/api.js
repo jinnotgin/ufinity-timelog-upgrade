@@ -100,7 +100,9 @@ export const getTimelogsData = async () => {
 				.replace(/\'/g, "")
 				.split(",");
 
-			const momentDate = moment(date, dateFormat);
+			const momentDate = moment(date, dateFormat)
+				.utc()
+				.add(moment().utcOffset(), "minutes");
 			const dateISO = momentDate.toISOString();
 
 			if (typeof output[dateISO] === "undefined") output[dateISO] = {};
@@ -118,7 +120,7 @@ export const getTimelogsData = async () => {
 export const saveTimelog = async (data) => {
 	try {
 		if (MODE === "dev") {
-			await wait(1250);
+			await wait(550);
 			const chance = Math.random();
 			if (chance > 0.1)
 				return data.action === "update" ? data.id : `${new Date().getTime()}`;

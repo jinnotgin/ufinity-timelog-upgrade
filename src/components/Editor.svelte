@@ -3,6 +3,7 @@
     projectsData,
     timelogsData,
     datesSelectedRange,
+    datesSelection,
     showWeekends
   } from "../stores.js";
   import moment from "moment";
@@ -16,22 +17,22 @@
   let hours = 8;
 
   const clearDatesSelected = () => {
-    datesSelectedRange.update(_ => []);
+    $datesSelection.reset();
+    datesSelection.update(_ => _);
   };
 
   const updateDatesSelected = () => {
-    if ($datesSelectedRange.length === 0) return false;
+    const arrayOfTimestamps = $datesSelection.toArray(true);
 
-    const startMoment = moment($datesSelectedRange[0]);
-    const endMoment = moment(_.get($datesSelectedRange, "[1]", startMoment));
+    if (arrayOfTimestamps.length === 0) return false;
 
     const future_timelogsData = _.clone($timelogsData);
-    for (
-      let currentMoment = startMoment.clone();
-      currentMoment.isSameOrBefore(endMoment);
-      currentMoment.add(1, "days")
-    ) {
+    for (let currentSlot of arrayOfTimestamps) {
+      const currentMoment = moment(currentSlot)
+        .utc()
+        .startOf("day");
       const currentIso = currentMoment.toISOString();
+
       if (!!!$showWeekends && [0, 6].includes(currentMoment.day())) continue;
 
       if (typeof future_timelogsData.client.data[currentIso] === "undefined")
@@ -43,6 +44,7 @@
         false
       );
 
+      // console.log(currentIso);
       future_timelogsData.client.data[currentIso][`${selected_project}`] = {
         projectId: `${selected_project}`,
         date: !!existingData ? existingData.date : currentMoment.clone(),
@@ -53,6 +55,11 @@
     // console.log(future_timelogsData);
     timelogsData.update(_ => future_timelogsData);
     console.log($timelogsData);
+  };
+
+  const saveClickHandler = () => {
+    clearDatesSelected();
+    saveHandler();
   };
 </script>
 
@@ -93,5 +100,5 @@
   <div class="divider" />
   <button on:click={clearDatesSelected} disabled={pageDisabled}>Clear</button>
   <div class="divider" />
-  <button on:click={saveHandler} disabled={pageDisabled}>Save</button>
+  <button on:click={saveClickHandler} disabled={pageDisabled}>Save</button>
 </div>

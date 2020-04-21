@@ -11,7 +11,8 @@ const calendarView_generator = (date) => {
 		endDate: date.clone().endOf("month").endOf("week"),
 	};
 };
-export const calendarView = writable(calendarView_generator(moment()));
+const seed_date = moment.utc().add(moment().utcOffset(), "minutes");
+export const calendarView = writable(calendarView_generator(seed_date));
 
 export const projectsData = writable({});
 
@@ -34,7 +35,9 @@ export const timelogAutoRules = writable([
 ]);
 export const daysWithAutoRule = writable([]);
 export const datesSelectedRange = writable([]);
-export const datesSelection = readable(new SelectionGrid(60 * 60 * 24));
+
+const stepSize = 60 * 60 * 24 * 1000; // one day in milliseconds
+export const datesSelection = writable(new SelectionGrid(stepSize));
 
 export const showWeekends = writable(false);
 export const uncommittedProjectsPerDay = writable([]);
